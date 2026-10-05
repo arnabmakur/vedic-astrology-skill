@@ -84,12 +84,18 @@ certainty of a verdict, a person's free choice), say so plainly and give the
 | Child's future | (separate chart) | needs the child's own birth details → run a fresh reading |
 
 ## Health
+> **Hard limit (SKILL.md rule 8):** never predict death, lifespan, illness,
+> accidents, or their timing — for the seeker or anyone else. Speak only to
+> general wellbeing themes, and always say: *see a doctor — a chart cannot
+> diagnose or forecast illness.*
+
 | Question | Tool | Factor / reason |
 |---|---|---|
-| Recurring health issues | houses, varga (D30) | 6th (disease)/8th (chronic), **Trimsamsa (D30)**, afflicted Sun/Moon (vitality) |
-| Difficult health period ahead | dasha, gochar | dasha of 6/8/12 lord, Sade Sati, malefic transit to Lagna/Moon |
-| Improve wellbeing / habits to avoid | dasha_predict, remedies | the health-area reading of the running dasha; remedies |
-| Mental stress | houses | Moon (mind) condition, 12th, Sade Sati (always: see a real doctor) |
+| "Will I get sick / when / how long will I (or X) live / when will X die?" | **none — decline** | Out of scope by rule 8. Say so kindly, then offer the wellbeing themes below |
+| Recurring health worries | houses | wellbeing themes only — 6th (routine, stress), Sun/Moon (vitality, mood); no diagnosis; see a doctor |
+| Feeling low on energy this period | dasha_predict, gochar | the running dasha's general energy/stress tone — framed as rest & routine, never as an illness forecast |
+| Improve wellbeing / habits to avoid | dasha_predict, remedies | the health-area reading of the running dasha; remedies (cultural only) |
+| Mental stress | houses | Moon (mind) condition, 12th, Sade Sati (always: see a real doctor; in crisis, point to local crisis support) |
 
 ## Education
 | Question | Tool | Factor / reason |

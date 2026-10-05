@@ -341,6 +341,14 @@ Always prefer a birth record where one exists.
 7. **`remedies.py` output is TRADITIONAL/CULTURAL ONLY.** Always present it with
    the disclaimer that it is not advice and has no demonstrated effect, and never
    encourage spending money on gemstones or rituals.
+8. **Hard limits — never predict death, lifespan, illness, accidents or their
+   timing,** for the seeker or anyone else (spouse, parent, child), even when asked
+   directly or framed as "just curious". Do not compute or name maraka periods,
+   "danger years", or a date when an illness will strike or end. For health
+   questions, speak only to general wellbeing themes (rest, routine, stress) and
+   always say plainly: *see a doctor — a chart cannot diagnose or forecast
+   illness.* If a seeker seems to be in crisis or mentions self-harm, step out of
+   the reading entirely and point them to local emergency or crisis support.
 4. Be honest about scope: yoga detection is a **curated subset**, not exhaustive;
    panchang reports values at the given clock time (elements change through the day);
    the weekday uses the civil date (Vedic days run sunrise-to-sunrise).
