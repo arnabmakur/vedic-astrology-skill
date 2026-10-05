@@ -293,11 +293,12 @@ def compute(args) -> dict:
 
     # The reading OPENS with today's Panchang + sky alignment, personalised to
     # this chart (each transiting graha as a house from the natal Moon/Lagna, and
-    # the Saturn-from-Moon Sade Sati phase). Sampled at noon of --on. Computed
-    # last so its engine re-init does not disturb the natal/transit calc above.
+    # the Saturn-from-Moon Sade Sati phase). Sampled at noon of --on. It
+    # restores the engine afterwards, so the natal settings stay in force.
     today_sky = sky_mod.compute_sky(
         args.on, "12:00:00", args.lat, args.lon, args.tz, args.ayanamsa,
         natal={"moon_sign_num": planets["Moon"]["sign_num"], "asc_sign_num": asc_sign},
+        node=getattr(args, "node", "mean"),
     )
 
     return {

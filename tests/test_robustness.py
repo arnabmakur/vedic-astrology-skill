@@ -292,3 +292,25 @@ def test_dst_fallback_ambiguity_names_both_fixed_offset_zones():
     with pytest.raises(ValueError) as e:
         core.to_julian_ut(2021, 4, 4, 1, 45, 0, "Australia/Lord_Howe")
     assert "--date 2021-04-03 --time 15:15:00 --tz UTC" in str(e.value)
+
+
+def test_preserved_engine_restores_callers_configuration():
+    # A helper that re-inits the engine (as panchang/sky do) must not leave the
+    # caller on different ayanamsa / node / topocentric settings.
+    import sky
+    core.init_engine("raman", node="true", topocentric=True, lat=10.0, lon=20.0)
+    state, rahu_body = dict(core._STATE), core.PLANETS["Rahu"]
+    moon_before = core.sidereal_longitude(2461000.5, core.PLANETS["Moon"])
+    sky.compute_sky("2026-06-04", "12:00:00", 28.6139, 77.2090, "Asia/Kolkata")
+    assert core._STATE == state and core.PLANETS["Rahu"] == rahu_body
+    assert core.sidereal_longitude(2461000.5, core.PLANETS["Moon"]) == moon_before
+    setup_module(None)   # back to this module's baseline for later tests
+
+
+def test_panchang_defaults_to_sunrise():
+    import panchang
+    r = panchang.compute("2026-06-04", None, lat=28.6139, lon=77.2090,
+                         tz="Asia/Kolkata")
+    assert r["input"]["time"].endswith("(sunrise)")
+    assert r["input"]["time"].startswith(r["sunrise"])     # HH:MM of the same rise
+    assert r["vara"] == "Thursday"

@@ -32,6 +32,7 @@ See the repository LICENSE and NOTICE files.
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
@@ -68,6 +69,7 @@ _STATE: dict = {
     "node": "mean",          # "mean" -> MEAN_NODE, "true" -> TRUE_NODE
     "ayanamsa": DEFAULT_AYANAMSA,
     "topocentric": False,
+    "topo": None,            # (lon, lat, altitude) passed to swe.set_topo, if any
     "ephemeris": "moshier",  # what is ACTUALLY in force, verified at init
 }
 
@@ -250,16 +252,39 @@ def init_engine(
                 + (f" Looked in: {path}" if path else " No path was configured.")
             )
 
+    topo = None
     if topocentric:
         if lat is None or lon is None:
             raise ValueError("topocentric=True requires lat and lon")
-        swe.set_topo(lon, lat, altitude)
+        topo = (lon, lat, altitude)
+        swe.set_topo(*topo)
         flags |= swe.FLG_TOPOCTR
 
     PLANETS["Rahu"] = swe.TRUE_NODE if node == "true" else swe.MEAN_NODE
 
     _STATE.update({"flags": flags, "node": node, "ayanamsa": key,
-                   "topocentric": topocentric, "ephemeris": ephemeris})
+                   "topocentric": topocentric, "topo": topo, "ephemeris": ephemeris})
+
+
+@contextmanager
+def preserved_engine():
+    """Run a block that re-inits the engine, then restore the caller's setup.
+
+    The engine is process-global, so a helper that calls init_engine() (e.g. the
+    panchang inside a birth-chart reading) would otherwise silently leave the
+    caller on its ayanamsa/node/topocentric settings.
+    """
+    saved = dict(_STATE)
+    saved_node_body = PLANETS["Rahu"]
+    try:
+        yield
+    finally:
+        swe.set_sid_mode(AYANAMSA[saved["ayanamsa"]], 0, 0)
+        if saved["topo"] is not None:
+            swe.set_topo(*saved["topo"])
+        PLANETS["Rahu"] = saved_node_body
+        _STATE.clear()
+        _STATE.update(saved)
 
 
 def ayanamsa_value(jd: float) -> float:

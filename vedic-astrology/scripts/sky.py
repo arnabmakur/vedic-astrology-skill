@@ -55,9 +55,14 @@ def _ord(n: int) -> str:
     return f"{n}{suf}"
 
 
+@core.preserved_engine()
 def compute_sky(date_str: str, time_str: str, lat: float, lon: float, tz: str,
-                ayanamsa: str = core.DEFAULT_AYANAMSA, natal: dict | None = None) -> dict:
+                ayanamsa: str = core.DEFAULT_AYANAMSA, natal: dict | None = None,
+                node: str = "mean") -> dict:
     """Compute today's Panchang + the live planetary alignment.
+
+    Leaves the caller's engine configuration untouched (core.preserved_engine),
+    so it is safe to call in the middle of a birth-chart computation.
 
     natal (optional): {"moon_sign_num": int, "asc_sign_num": int}. When given,
     every transiting graha is also counted as a house from the natal Moon and
@@ -71,7 +76,7 @@ def compute_sky(date_str: str, time_str: str, lat: float, lon: float, tz: str,
 
     # 2) Live sky — sidereal positions of all nine grahas at the sampled time.
     #    Topocentric (observer on Earth) to match the birth-chart / gochar engine.
-    core.init_engine(ayanamsa, topocentric=True, lat=lat, lon=lon)
+    core.init_engine(ayanamsa, node=node, topocentric=True, lat=lat, lon=lon)
     y, m, d = (int(x) for x in date_str.split("-"))
     hh, mm, ss = _parse_time(time_str)
     jd = core.to_julian_ut(y, m, d, hh, mm, ss, tz)
@@ -230,6 +235,7 @@ def main():
     ap.add_argument("--lon", type=float, required=True)
     ap.add_argument("--tz", required=True, help="IANA timezone, e.g. Asia/Kolkata")
     ap.add_argument("--ayanamsa", default=core.DEFAULT_AYANAMSA)
+    ap.add_argument("--node", default="mean", choices=["mean", "true"])
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -240,7 +246,8 @@ def main():
         sys.exit(1)
 
     try:
-        result = compute_sky(args.date, args.time, args.lat, args.lon, args.tz, args.ayanamsa)
+        result = compute_sky(args.date, args.time, args.lat, args.lon, args.tz, args.ayanamsa,
+                             node=args.node)
     except Exception as e:  # noqa: BLE001
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)

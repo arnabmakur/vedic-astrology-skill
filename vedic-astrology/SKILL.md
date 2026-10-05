@@ -193,7 +193,7 @@ python3 dasha_yogini.py --date 1990-08-15 --time 14:30:00 \
 python3 dasha_predict.py --date 1990-08-15 --time 14:30:00 \
   --lat 28.6139 --lon 77.2090 --tz Asia/Kolkata --on 2026-06-04
 
-# Panchang for a date (no birth data needed; --time defaults to noon)
+# Panchang for a date (no birth data needed; --time defaults to the day's sunrise)
 python3 panchang.py --date 2026-06-04 \
   --lat 28.6139 --lon 77.2090 --tz Asia/Kolkata
 
@@ -350,8 +350,9 @@ Always prefer a birth record where one exists.
    illness.* If a seeker seems to be in crisis or mentions self-harm, step out of
    the reading entirely and point them to local emergency or crisis support.
 4. Be honest about scope: yoga detection is a **curated subset**, not exhaustive;
-   panchang reports values at the given clock time (elements change through the day);
-   the weekday uses the civil date (Vedic days run sunrise-to-sunrise).
+   panchang reports values at the given clock time, or at sunrise when no time is
+   given (elements change through the day); the weekday (vara) runs
+   sunrise-to-sunrise, so a time before sunrise belongs to the previous vara.
 
 ## How it works (for debugging)
 

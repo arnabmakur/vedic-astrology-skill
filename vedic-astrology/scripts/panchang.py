@@ -18,8 +18,10 @@ Usage:
         --lat 28.6139 --lon 77.2090 --tz Asia/Kolkata \\
         [--ayanamsa lahiri] [--json]
 
-Note: tithi/nakshatra/yoga/karana change through the day; this reports the
-value at the given clock time (default noon if --time omitted).
+Note: tithi/nakshatra/yoga/karana change through the day. With --time they are
+reported at that clock time; without it, at local SUNRISE — the traditional
+convention for "the tithi of the day" (falls back to noon where the Sun does
+not rise, e.g. polar day/night).
 """
 
 from __future__ import annotations
@@ -76,11 +78,23 @@ def _karana_name(index: int) -> str:
 def compute_panchang(args) -> dict:
     core.init_engine(args.ayanamsa)
     y, m, d = (int(x) for x in args.date.split("-"))
-    t = args.time or "12:00:00"
-    parts = t.split(":")
-    hh = int(parts[0]); mm = int(parts[1]) if len(parts) > 1 else 0
-    ss = int(parts[2]) if len(parts) > 2 else 0
-    jd = core.to_julian_ut(y, m, d, hh, mm, ss, args.tz)
+    if args.time:
+        t = args.time
+        parts = t.split(":")
+        hh = int(parts[0]); mm = int(parts[1]) if len(parts) > 1 else 0
+        ss = int(parts[2]) if len(parts) > 2 else 0
+        jd = core.to_julian_ut(y, m, d, hh, mm, ss, args.tz)
+    else:
+        # No time given: sample at the day's sunrise. Search from local noon
+        # minus half a day (≈ midnight; noon always exists, midnight may not
+        # in zones whose DST switch happens at 00:00).
+        noon = core.to_julian_ut(y, m, d, 12, 0, 0, args.tz)
+        rise, _ = core.next_rise_set(noon - 0.5, args.lat, args.lon)
+        if rise is not None and rise < noon:
+            jd = rise + 1e-6          # just after sunrise, inside the new Vedic day
+            t = core.jd_to_local(rise, args.tz).strftime("%H:%M:%S") + " (sunrise)"
+        else:
+            jd, t = noon, "12:00:00"
 
     sun_lon, _ = core.sidereal_longitude(jd, core.PLANETS["Sun"])
     moon_lon, _ = core.sidereal_longitude(jd, core.PLANETS["Moon"])
@@ -142,9 +156,10 @@ def compute(date: str, time: str | None = None, *, lat: float, lon: float,
     Mirrors compute_panchang() but takes explicit params, so other scripts
     (sky.py, astro_claude.py) can reuse the almanac directly.
     """
-    ns = argparse.Namespace(date=date, time=time or "12:00:00", lat=lat, lon=lon,
+    ns = argparse.Namespace(date=date, time=time, lat=lat, lon=lon,
                             tz=tz, ayanamsa=ayanamsa)
-    return compute_panchang(ns)
+    with core.preserved_engine():
+        return compute_panchang(ns)
 
 
 def _fmt_clock(jd, tz_name):
@@ -210,7 +225,8 @@ def render_text(result: dict) -> str:
 def main():
     ap = argparse.ArgumentParser(description="Compute the daily Panchang.")
     ap.add_argument("--date", required=True, help="Date YYYY-MM-DD")
-    ap.add_argument("--time", default="12:00:00", help="Local clock time HH:MM[:SS]")
+    ap.add_argument("--time", default=None,
+                    help="Local clock time HH:MM[:SS] (default: the day's sunrise)")
     ap.add_argument("--lat", type=float, required=True)
     ap.add_argument("--lon", type=float, required=True)
     ap.add_argument("--tz", required=True, help="IANA timezone, e.g. Asia/Kolkata")
