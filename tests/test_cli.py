@@ -533,6 +533,140 @@ def test_muhurta_yoga_names_match_panchang():
     assert not unknown, f"muhurta scores unknown yoga name(s): {sorted(unknown)}"
 
 
+def test_swiss_ephemeris_never_silently_falls_back():
+    """ephemeris='swiss' must deliver Swiss or refuse — never quietly Moshier.
+
+    pyswisseph falls back to Moshier when the .se1 files are absent, returning
+    the same numbers under a Swiss label. Written to hold either way: if the
+    files are missing the guard must raise; if they are present Swiss must
+    genuinely be in force.
+    """
+    sys.path.insert(0, VEDIC)
+    try:
+        import core
+        import swisseph as swe
+        try:
+            core.init_engine(ephemeris="swiss")
+        except ValueError as exc:
+            assert "fell back" in str(exc)          # guard fired, as it should
+        else:
+            _, retflag = swe.calc_ut(2451545.0, swe.SUN, core._STATE["flags"])
+            assert retflag & swe.FLG_SWIEPH        # Swiss really engaged
+        core.init_engine(ephemeris="moshier")       # restore the default
+        assert core._STATE["ephemeris"] == "moshier"
+        with pytest.raises(ValueError):
+            core.init_engine(ephemeris="banana")
+    finally:
+        sys.path.remove(VEDIC)
+
+
+def _swiss_data_available() -> bool:
+    """True only if the Swiss .se1 files are genuinely usable here."""
+    sys.path.insert(0, VEDIC)
+    try:
+        import core
+        try:
+            core.init_engine(ephemeris="swiss")
+            return True
+        except ValueError:
+            return False
+        finally:
+            core.init_engine(ephemeris="moshier")
+    finally:
+        sys.path.remove(VEDIC)
+
+
+def test_swiss_ephemeris_cli_matches_data_availability():
+    """The CLI must never print a chart claiming a source it does not have.
+
+    Deterministic in both environments: with the .se1 files present the run
+    succeeds; without them it must fail loudly. Deliberately not a skip — a
+    skip here would pass silently in exactly the broken case.
+    """
+    proc = subprocess.run(
+        [sys.executable, "kundli.py", *REF, "--ephemeris", "swiss"],
+        cwd=VEDIC, capture_output=True, text=True)
+    if _swiss_data_available():
+        assert proc.returncode == 0
+    else:
+        assert proc.returncode != 0, "swiss ran without .se1 files — silent fallback"
+        assert "fell back" in proc.stdout + proc.stderr
+
+
+def test_verify_expect_moon_accepts_sign_and_degrees():
+    """--expect-moon takes decimal degrees OR a sign with degrees inside it.
+
+    Previously only decimal degrees parsed; a sign name died on a raw
+    float() ValueError, which is the most likely thing a user types.
+    """
+    sys.path.insert(0, VEDIC)
+    try:
+        import verify
+        assert verify.parse_longitude("198.2081") == pytest.approx(198.2081)
+        # Libra starts at 180 deg; 18d12m into it = 198.2 deg.
+        assert verify.parse_longitude("Libra 18 12") == pytest.approx(198.2)
+        assert verify.parse_longitude("lib 18 12") == pytest.approx(198.2)
+        assert verify.parse_longitude("Libra 18\u00b012'") == pytest.approx(198.2)
+        # Instructive errors, not opaque float() failures.
+        for bad in ("Libra", "banana", "Libra 44", "Libra x"):
+            with pytest.raises(ValueError):
+                verify.parse_longitude(bad)
+    finally:
+        sys.path.remove(VEDIC)
+
+
+def test_muhurta_excludes_chandrashtama():
+    """Chandrashtama days must never be rankable.
+
+    Regression for a silent-wrong-answer bug: the scorer treated the transit
+    Moon in the 8th from the janma rashi as ordinary weak Chandra Bala (-15),
+    so a Chandrashtama day could still surface as an 'Excellent' recommendation.
+    Such days are now held out of `ranked` and reported under
+    `excluded_chandrashtama` instead — visibly, not silently dropped.
+
+    Reference chart has Moon in Taurus, so Chandrashtama falls when the transit
+    Moon is in Sagittarius — 2026-11-13/14 in this window.
+    """
+    span = 30                                    # 2026-11-01 .. 2026-11-30
+    r = run(VEDIC, "muhurta.py",
+            ["--event", "business", "--from", "2026-11-01", "--to", "2026-11-30",
+             "--lat", "28.6139", "--lon", "77.2090", "--tz", "Asia/Kolkata",
+             "--birth-date", "1990-08-15", "--birth-time", "14:30:00",
+             "--birth-lat", "28.6139", "--birth-lon", "77.2090",
+             "--birth-tz", "Asia/Kolkata"])
+
+    excluded = r["excluded_chandrashtama"]
+    exc_dates = {d["date"] for d in excluded}
+    assert exc_dates == {"2026-11-13", "2026-11-14"}
+
+    # No day is lost: the partition covers the whole window.
+    assert len(r["ranked"]) + len(excluded) == span
+
+    # Nothing with the Moon 8th from the natal Moon survives in the ranking.
+    assert all(d.get("chandra_pos") != 8 for d in r["ranked"])
+    for d in excluded:
+        assert d["chandra_pos"] == 8
+        assert d["verdict"] == "Excluded"
+
+    # And the excluded days are genuinely absent from the ranked list.
+    assert not (exc_dates & {d["date"] for d in r["ranked"]})
+
+
+def test_muhurta_chandrashtama_needs_birth_data():
+    """Without birth data the check cannot run — it must not silently 'pass'.
+
+    An empty exclusion list here means 'undetectable', not 'none present':
+    the same window personalised does exclude two days.
+    """
+    r = run(VEDIC, "muhurta.py",
+            ["--event", "business", "--from", "2026-11-01", "--to", "2026-11-30",
+             "--lat", "28.6139", "--lon", "77.2090", "--tz", "Asia/Kolkata"])
+    assert r["personalised"] is False
+    assert r["excluded_chandrashtama"] == []
+    assert len(r["ranked"]) == 30                # nothing excluded, nothing lost
+    assert all(d["chandra_pos"] is None for d in r["ranked"])
+
+
 def test_muhurta_rejects_backwards_range():
     proc = subprocess.run(
         [sys.executable, "muhurta.py", "--event", "vehicle",
