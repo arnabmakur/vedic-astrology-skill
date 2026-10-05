@@ -177,7 +177,7 @@ vedic-astrology-skill/         # git repo (push this)
 ├── README.md  LICENSE  NOTICE  .gitignore
 ├── examples/sample-output.md
 ├── tests/test_cli.py           # golden-value regression suite
-├── .github/workflows/ci.yml    # CI: pytest on py3.10–3.12
+├── .github/workflows/ci.yml    # CI: pytest on py3.10–3.13
 ├── vedic-astrology/            # SKILL 1 — copy into ~/.claude/skills/
 │   ├── SKILL.md
 │   ├── requirements.txt        # pyswisseph, pytz
