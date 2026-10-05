@@ -67,13 +67,16 @@ Configurable **ayanamsa** (Lahiri / Raman / KP / Yukteshwar / Fagan-Bradley),
 
 ## 📦 Installation
 
+> This is a fork of [samarth1106/vedic-astrology-skill](https://github.com/samarth1106/vedic-astrology-skill)
+> by samarth1106, the original author. The commands below install this fork.
+
 ### 1. Install as a Claude Code plugin (recommended)
 
 Both skills, in one command:
 
 ```
-/plugin marketplace add samarth1106/vedic-astrology-skill
-/plugin install vedic-astrology@samarth1106-vedic
+/plugin marketplace add arnabmakur/vedic-astrology-skill
+/plugin install vedic-astrology@arnabmakur-vedic
 ```
 
 ### 1b. Or copy it in as a plain skill
@@ -81,7 +84,7 @@ Both skills, in one command:
 Copy the `vedic-astrology/` folder into your Claude Code skills directory:
 
 ```bash
-git clone https://github.com/samarth1106/vedic-astrology-skill.git
+git clone https://github.com/arnabmakur/vedic-astrology-skill.git
 cp -r vedic-astrology-skill/vedic-astrology ~/.claude/skills/
 ```
 

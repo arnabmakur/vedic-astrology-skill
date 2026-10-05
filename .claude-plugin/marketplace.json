@@ -1,9 +1,9 @@
 {
-  "name": "samarth1106-vedic",
+  "name": "arnabmakur-vedic",
   "description": "Offline Vedic astrology and numerology tooling for Claude Code \u2014 real Swiss Ephemeris maths, no API keys, no network.",
   "owner": {
-    "name": "samarth1106",
-    "url": "https://github.com/samarth1106"
+    "name": "arnabmakur",
+    "url": "https://github.com/arnabmakur"
   },
   "plugins": [
     {
@@ -14,7 +14,7 @@
       "author": {
         "name": "samarth1106"
       },
-      "homepage": "https://github.com/samarth1106/vedic-astrology-skill",
+      "homepage": "https://github.com/arnabmakur/vedic-astrology-skill",
       "license": "AGPL-3.0",
       "keywords": [
         "vedic-astrology",
