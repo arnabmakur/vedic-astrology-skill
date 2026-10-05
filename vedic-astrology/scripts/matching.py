@@ -64,12 +64,12 @@ VARNA = {4: 4, 8: 4, 12: 4, 1: 3, 5: 3, 9: 3, 2: 2, 6: 2, 10: 2, 3: 1, 7: 1, 11:
 # Vashya group by Moon sign (1..12). Documented full-sign convention.
 VASHYA = {1: "Chatush", 2: "Chatush", 3: "Nara", 4: "Jala", 5: "Vana", 6: "Nara",
           7: "Nara", 8: "Keeta", 9: "Nara", 10: "Jala", 11: "Nara", 12: "Jala"}
-VASHYA_SCORE = {  # [boy][girl] out of 2
-    "Nara":   {"Nara": 2, "Chatush": 1, "Jala": 1, "Vana": 0, "Keeta": 1},
-    "Chatush": {"Nara": 1, "Chatush": 2, "Jala": 1, "Vana": 0, "Keeta": 1},
-    "Jala":   {"Nara": 1, "Chatush": 1, "Jala": 2, "Vana": 1, "Keeta": 0.5},
-    "Vana":   {"Nara": 0, "Chatush": 0.5, "Jala": 1, "Vana": 2, "Keeta": 1},
-    "Keeta":  {"Nara": 1, "Chatush": 1, "Jala": 0.5, "Vana": 1, "Keeta": 2},
+VASHYA_SCORE = {  # [boy][girl] out of 2 — the table most Indian software uses
+    "Chatush": {"Chatush": 2, "Nara": 1, "Jala": 1, "Vana": 0.5, "Keeta": 1},
+    "Nara":    {"Chatush": 1, "Nara": 2, "Jala": 0.5, "Vana": 0, "Keeta": 1},
+    "Jala":    {"Chatush": 1, "Nara": 0.5, "Jala": 2, "Vana": 1, "Keeta": 1},
+    "Vana":    {"Chatush": 0.5, "Nara": 0, "Jala": 1, "Vana": 2, "Keeta": 0},
+    "Keeta":   {"Chatush": 1, "Nara": 1, "Jala": 1, "Vana": 0, "Keeta": 2},
 }
 # Gana score [boy_gana][girl_gana] out of 6 (BV Raman convention).
 GANA_SCORE = [[6, 6, 1], [5, 6, 0], [1, 0, 6]]
@@ -121,10 +121,13 @@ def k_vashya(boy, girl):
 
 
 def k_tara(boy, girl):
+    # Count from one star to the other (inclusive), take the remainder by 9:
+    # 3 (Vipat), 5 (Pratyak) and 7 (Naidhana) are inauspicious, the rest are
+    # auspicious — so the same nakshatra (Janma, 1) earns the full 3 points.
     def good(a, b):
         count = (b - a) % 27 + 1
         tara = count % 9 or 9
-        return tara in (2, 4, 6, 8, 9)
+        return tara not in (3, 5, 7)
     s = (1.5 if good(boy["moon_nakshatra_index"], girl["moon_nakshatra_index"]) else 0) + \
         (1.5 if good(girl["moon_nakshatra_index"], boy["moon_nakshatra_index"]) else 0)
     return s, 3, "Tara (both directions)"

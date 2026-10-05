@@ -1055,3 +1055,18 @@ def test_numerology_folds_accents_and_rejects_non_latin_names():
         [sys.executable, "numerology.py", "--date", "1990-08-15", "--name", "अर्णब"],
         cwd=NUMER, capture_output=True, text=True)
     assert proc.returncode != 0 and "outside A-Z" in proc.stderr
+
+
+def test_guna_milan_tara_and_vashya_follow_common_tables():
+    sys.path.insert(0, VEDIC)
+    import matching
+    # Same nakshatra (Janma tara) is auspicious both ways -> full 3 points.
+    same = {"moon_nakshatra_index": 3}
+    assert matching.k_tara(same, same)[0] == 3
+    # Counting 3rd (Vipat) from either side costs that side's 1.5.
+    assert matching.k_tara({"moon_nakshatra_index": 0},
+                           {"moon_nakshatra_index": 2})[0] == 1.5
+    # Spot-check the standard Vashya cells that most software uses.
+    V = matching.VASHYA_SCORE
+    assert V["Nara"]["Jala"] == 0.5 and V["Chatush"]["Vana"] == 0.5
+    assert V["Vana"]["Keeta"] == 0 and V["Keeta"]["Jala"] == 1
