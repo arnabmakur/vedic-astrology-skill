@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import unicodedata
 
 # --- Constant lookups ------------------------------------------------------
 
@@ -161,9 +162,33 @@ def reduce_to_single(n: int, keep_master: bool = False) -> int:
     return n
 
 
+# Latin letters that Unicode decomposition does not reduce to A-Z.
+_LATIN_EXTRA = {"Æ": "AE", "Œ": "OE", "Ø": "O", "Đ": "D", "Ð": "D",
+                "Ł": "L", "Þ": "TH", "ẞ": "SS"}
+
+
+def _romanize(name: str) -> str:
+    """Uppercase the name and fold accented Latin letters to A-Z (É->E, ß->SS).
+
+    The letter tables only cover A-Z, so any other letter would otherwise be
+    silently dropped (changing the number) or crash. A name in a non-Latin
+    script raises a clear error asking for the Roman-script spelling.
+    """
+    s = "".join(_LATIN_EXTRA.get(c, c) for c in name.upper())
+    s = "".join(c for c in unicodedata.normalize("NFKD", s)
+                if not unicodedata.combining(c))
+    bad = sorted({c for c in s if c.isalpha() and not ("A" <= c <= "Z")})
+    if bad:
+        raise ValueError(
+            f"name {name!r} contains letters outside A-Z ({''.join(bad)}). "
+            f"Numerology letter values are defined for the Roman alphabet only — "
+            f"give the name as it is spelled in English (e.g. on a passport).")
+    return s
+
+
 def _letters(name: str) -> str:
-    """Uppercase letters of name only (ignore digits, spaces, punctuation)."""
-    return "".join(ch for ch in name.upper() if ch.isalpha())
+    """Uppercase A-Z letters of name only (ignore digits, spaces, punctuation)."""
+    return "".join(ch for ch in _romanize(name) if ch.isalpha())
 
 
 def split_vowels_consonants(name: str):
@@ -175,7 +200,7 @@ def split_vowels_consonants(name: str):
     "Maya"/"Yoga" is a consonant). W is always a consonant here.
     """
     vowels, consonants = [], []
-    for word in name.upper().split():
+    for word in _romanize(name).split():
         seq = [c for c in word if c.isalpha()]
         for idx, ch in enumerate(seq):
             if ch in "AEIOU":

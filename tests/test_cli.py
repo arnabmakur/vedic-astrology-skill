@@ -1042,3 +1042,16 @@ def test_skill_frontmatter_description_within_spec(skill):
     desc = desc[len("description: "):]
     assert 0 < len(desc) <= 1024, len(desc)
     assert ": " not in desc and desc[0] not in "'\"[{>|*&!%@`#"
+
+
+def test_numerology_folds_accents_and_rejects_non_latin_names():
+    # Accented Latin letters fold to A-Z rather than being silently dropped.
+    plain = run(NUMER, "numerology.py", ["--date", "1990-08-15", "--name", "Jose"])
+    accented = run(NUMER, "numerology.py", ["--date", "1990-08-15", "--name", "José"])
+    assert accented["naamank"] == plain["naamank"]
+    assert accented["naamank"]["chaldean"]["letters"] == "JOSE"
+    # A non-Latin script fails with an actionable message, not a bare KeyError.
+    proc = subprocess.run(
+        [sys.executable, "numerology.py", "--date", "1990-08-15", "--name", "अर्णब"],
+        cwd=NUMER, capture_output=True, text=True)
+    assert proc.returncode != 0 and "outside A-Z" in proc.stderr
