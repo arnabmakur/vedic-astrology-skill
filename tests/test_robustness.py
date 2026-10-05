@@ -276,3 +276,19 @@ def test_verify_isolates_moon_parallax():
     assert pos["Moon"]["delta_arcmin"] > 10
     for name in ("Sun", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"):
         assert pos[name]["delta_arcmin"] < 1.0
+
+
+def test_dst_fallback_ambiguity_names_both_fixed_offset_zones():
+    # 01:30 on 2020-11-01 happened twice in New York (EDT, then EST). The error
+    # must name a fixed-offset zone for each, and that zone must reproduce the
+    # intended instant (Etc/GMT sign is inverted: UTC-4 == Etc/GMT+4).
+    with pytest.raises(ValueError) as e:
+        core.to_julian_ut(2020, 11, 1, 1, 30, 0, "America/New_York")
+    msg = str(e.value)
+    assert "--tz Etc/GMT+4" in msg and "--tz Etc/GMT+5" in msg
+    edt = core.to_julian_ut(2020, 11, 1, 1, 30, 0, "Etc/GMT+4")
+    assert abs(edt - core.to_julian_ut(2020, 11, 1, 5, 30, 0, "UTC")) < 1e-9
+    # A non-whole-hour offset (Lord Howe, UTC+10:30) has no Etc zone -> UTC form.
+    with pytest.raises(ValueError) as e:
+        core.to_julian_ut(2021, 4, 4, 1, 45, 0, "Australia/Lord_Howe")
+    assert "--date 2021-04-03 --time 15:15:00 --tz UTC" in str(e.value)

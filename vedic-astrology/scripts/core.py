@@ -305,9 +305,23 @@ def to_julian_ut(
             f"spring-forward gap. Check the birth time/zone."
         )
     except pytz.exceptions.AmbiguousTimeError:
+        # Both readings are real moments. Name each as a fixed-offset zone the
+        # caller can pass to any script: Etc/GMT±N keeps the local clock time and
+        # date (POSIX sign is inverted: UTC-4 is Etc/GMT+4); a non-whole-hour
+        # offset has no Etc zone, so fall back to the UTC clock time.
+        def _fixed(is_dst: bool) -> str:
+            dt = tz.localize(naive, is_dst=is_dst)
+            off_h = dt.utcoffset().total_seconds() / 3600.0
+            label = f"({dt.tzname()}, UTC{dt:%z})"
+            if off_h.is_integer():
+                etc = "Etc/GMT" if off_h == 0 else f"Etc/GMT{-int(off_h):+d}"
+                return f"--tz {etc} {label}"
+            u = dt.astimezone(pytz.utc)
+            return f"--date {u:%Y-%m-%d} --time {u:%H:%M:%S} --tz UTC {label}"
         raise ValueError(
             f"{naive} is ambiguous in {tz_name} — it occurs twice on a daylight-saving "
-            f"fall-back day. Specify which (e.g. add/subtract the DST hour)."
+            f"fall-back day. Re-run with a fixed-offset zone for the one you mean: "
+            f"first occurrence {_fixed(True)}; second occurrence {_fixed(False)}."
         )
     utc_dt = local_dt.astimezone(pytz.utc)
     ut_hour = utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0

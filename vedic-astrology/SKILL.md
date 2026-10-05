@@ -95,6 +95,11 @@ Moon-based dasha timing will be unreliable. Offer to proceed with a noon default
 **If only a city is given:** ask for, or look up, its latitude/longitude and IANA
 timezone before running. Do not guess coordinates silently.
 
+**If a script says the time is ambiguous (DST fall-back hour):** the clock time
+happened twice that night. Ask the seeker which one (e.g. "before or after the
+clocks went back?" — the birth certificate may say EDT/EST), then re-run with the
+fixed-offset `--tz` the error names for that occurrence. Never pick one silently.
+
 ## Routing — which script to run
 
 All scripts live in `scripts/` and accept `--json` for machine-readable output.
