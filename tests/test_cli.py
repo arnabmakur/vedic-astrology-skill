@@ -1030,3 +1030,15 @@ def test_geocode_mumbai():
     assert 18.8 < float(top["lat"]) < 19.3
     assert 72.7 < float(top["lon"]) < 73.0
     assert top["timezone"] == "Asia/Kolkata"
+
+
+@pytest.mark.parametrize("skill", ["vedic-astrology", "numerology"])
+def test_skill_frontmatter_description_within_spec(skill):
+    # Agent Skills spec: description <= 1024 chars. Plain (unquoted) YAML
+    # scalar, so it must not contain ": " or start with a YAML indicator.
+    text = open(os.path.join(REPO, skill, "SKILL.md"), encoding="utf-8").read()
+    front = text.split("---")[1]
+    desc = next(l for l in front.splitlines() if l.startswith("description: "))
+    desc = desc[len("description: "):]
+    assert 0 < len(desc) <= 1024, len(desc)
+    assert ": " not in desc and desc[0] not in "'\"[{>|*&!%@`#"
