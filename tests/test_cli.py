@@ -128,6 +128,41 @@ def test_yogini_dasha_antardashas_sum_to_maha():
     assert abs(sub_total - md["years"]) < 1e-3
 
 
+def test_dasha_birth_mahadasha_antardashas_continue_prebirth_cycle():
+    # REF is born 7.8 of 10 years into the Moon Mahadasha, so Moon-Moon … Moon-
+    # Mercury are already over: the running Antardasha at birth is Ketu, then
+    # Venus and Sun. All nine must NOT be squeezed into the post-birth balance.
+    r = run(VEDIC, "dasha.py", REF + ["--levels", "3"])
+    md = r["mahadashas"][0]
+    assert [a["lord"] for a in md["antardashas"]] == ["Ketu", "Venus", "Sun"]
+    assert md["antardashas"][0]["start"] == md["start"]
+    assert abs(sum(a["years"] for a in md["antardashas"]) - md["years"]) < 2e-3
+    # Venus is a full (unclipped) Antardasha: 10 * 20/120 years.
+    assert abs(md["antardashas"][1]["years"] - 10 * 20 / 120) < 1e-3
+    # Pratyantardashas of the clipped Ketu Antardasha are clipped too.
+    assert md["antardashas"][0]["pratyantardashas"][0]["lord"] == "Mercury"
+
+
+def test_yogini_birth_period_antardashas_continue_prebirth_cycle():
+    # Siddha (7 yrs) runs Siddha, Sankata, …, Bhadrika, Ulka; with a 1.54-yr
+    # balance only the tail end (Bhadrika part, Ulka) remains after birth.
+    r = run(VEDIC, "dasha_yogini.py", REF + ["--levels", "2"])
+    md = r["mahadashas"][0]
+    assert [a["yogini"] for a in md["antardashas"]] == ["Bhadrika", "Ulka"]
+    assert abs(sum(a["years"] for a in md["antardashas"]) - md["years"]) < 2e-3
+
+
+def test_rectify_active_lords_at_birth_match_dasha():
+    sys.path.insert(0, VEDIC)
+    import core
+    import rectify
+    core.init_engine("lahiri", topocentric=True, lat=28.6139, lon=77.2090)
+    birth = core.to_julian_ut(1990, 8, 15, 14, 30, 0, "Asia/Kolkata")
+    assert rectify.active_lords(birth, birth + 1)[:2] == ("Moon", "Ketu")
+    assert rectify.active_lords(birth, birth + 400)[:2] == ("Moon", "Venus")
+    assert rectify.active_lords(birth, birth - 1) is None
+
+
 def test_rectify_event_fit_and_sensitivity():
     # REF chart on 2026-06-04 runs Jupiter-Venus (see test_dasha_predict). A
     # 'gain' event (karakas Jupiter/Venus) on that date should fit the unshifted

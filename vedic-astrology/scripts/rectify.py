@@ -89,18 +89,22 @@ def _lord_of_house(asc_sign: int, house: int) -> str:
 # Vimshottari timeline + active-lord finder (mirrors dasha.py's arithmetic).
 # --------------------------------------------------------------------------- #
 def _mahadashas(birth_jd: float) -> list[tuple]:
-    """Return [(lord, start_jd, end_jd)] for the 9-period cycle from birth."""
+    """Return [(lord, start_jd, end_jd)] for the 9-period cycle from birth.
+
+    The first Mahadasha's start is its NOTIONAL start before birth (its full
+    length is kept), so that _subdivide() cuts its Antardashas correctly rather
+    than squeezing all nine into the post-birth balance.
+    """
     moon_lon, _ = core.sidereal_longitude(birth_jd, core.PLANETS["Moon"])
     nak = int(moon_lon // core.NAKSHATRA_SPAN)
     frac = (moon_lon % core.NAKSHATRA_SPAN) / core.NAKSHATRA_SPAN
     start = core.DASHA_SEQUENCE[nak % 9]
     si = core.DASHA_SEQUENCE.index(start)
     seq = [core.DASHA_SEQUENCE[(si + i) % 9] for i in range(9)]
-    balance = core.DASHA_YEARS[start] * (1.0 - frac)
-    out, cursor = [], birth_jd
-    for i, lord in enumerate(seq):
-        yrs = balance if i == 0 else core.DASHA_YEARS[lord]
-        end = cursor + yrs * DAYS_PER_YEAR
+    elapsed = core.DASHA_YEARS[start] * frac
+    out, cursor = [], birth_jd - elapsed * DAYS_PER_YEAR
+    for lord in seq:
+        end = cursor + core.DASHA_YEARS[lord] * DAYS_PER_YEAR
         out.append((lord, cursor, end))
         cursor = end
     return out
@@ -121,6 +125,8 @@ def _subdivide(lord: str, start: float, end: float) -> list[tuple]:
 
 def active_lords(birth_jd: float, target_jd: float) -> tuple[str, str, str] | None:
     """(Mahadasha, Antardasha, Pratyantardasha) lords running on target_jd."""
+    if target_jd < birth_jd:
+        return None
     for lord, s, e in _mahadashas(birth_jd):
         if s <= target_jd < e:
             md = lord

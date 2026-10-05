@@ -92,7 +92,15 @@ def compute_dasha(args) -> dict:
             "years": round(span_years, 3),
         }
         if args.levels >= 2:
-            entry["antardashas"] = _antardashas(lord, cursor, span_years, args.levels)
+            if i == 0:
+                # The birth Mahadasha began BEFORE birth. Its sub-periods are cut
+                # from the FULL period starting at that notional start; the ones
+                # already over at birth are dropped and the running one clipped.
+                full_start = birth_dt - timedelta(days=elapsed_years * DAYS_PER_YEAR)
+                entry["antardashas"] = _antardashas(lord, full_start, full_years,
+                                                    args.levels, not_before=birth_dt)
+            else:
+                entry["antardashas"] = _antardashas(lord, cursor, span_years, args.levels)
         periods.append(entry)
         cursor = end
 
@@ -110,25 +118,36 @@ def compute_dasha(args) -> dict:
 
 
 def _antardashas(maha_lord: str, start_dt: datetime, maha_years: float,
-                 levels: int = 2) -> list[dict]:
+                 levels: int = 2, not_before: datetime | None = None) -> list[dict]:
     """Sub-divide a period into 9 sub-periods, proportional to dasha years.
 
     Used recursively: Antardasha = Mahadasha/9, Pratyantardasha = Antardasha/9.
     Sub-period length = parent_years * (sub_lord_years / 120).
+
+    not_before: drop sub-periods that end on/before this moment and clip the
+    one running at it (used for the birth Mahadasha, which started pre-birth).
     """
     subs = []
     cursor = start_dt
     for sub_lord in _sequence_from(maha_lord):
         sub_years = maha_years * (core.DASHA_YEARS[sub_lord] / 120.0)
         end = cursor + timedelta(days=sub_years * DAYS_PER_YEAR)
+        if not_before is not None and end <= not_before:
+            cursor = end
+            continue
+        shown_start, shown_years = cursor, sub_years
+        if not_before is not None and cursor < not_before:
+            shown_start = not_before
+            shown_years = (end - not_before).total_seconds() / 86400.0 / DAYS_PER_YEAR
         node = {
             "lord": sub_lord,
-            "start": _fmt_day(cursor),
+            "start": _fmt_day(shown_start),
             "end": _fmt_day(end),
-            "years": round(sub_years, 3),
+            "years": round(shown_years, 3),
         }
         if levels >= 3:
-            node["pratyantardashas"] = _antardashas(sub_lord, cursor, sub_years, levels - 1)
+            node["pratyantardashas"] = _antardashas(sub_lord, cursor, sub_years,
+                                                    levels - 1, not_before)
         subs.append(node)
         cursor = end
     return subs
